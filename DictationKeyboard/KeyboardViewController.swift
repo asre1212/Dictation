@@ -101,7 +101,7 @@ final class KeyboardViewController: UIInputViewController {
             // either is worse than using the system method.
             button.addTarget(
                 self,
-                action: #selector(handleInputModeList(from:with:)),
+                action: #selector(UIInputViewController.handleInputModeList(from:with:)),
                 for: .allTouchEvents
             )
         }

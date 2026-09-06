@@ -29,7 +29,17 @@ jobs:
           swift --version
 
       - name: Compile both targets
-        run: scripts/build-check.sh
+        run: |
+          set -o pipefail
+          scripts/build-check.sh 2>&1 | tee "$RUNNER_TEMP/build.log"
+
+      # xcodebuild's failure output is thousands of lines of frontend invocations
+      # with the diagnostics scattered through it. This is the readable version.
+      - name: Diagnostics
+        if: always()
+        run: |
+          grep -E "^/.+:[0-9]+:[0-9]+: (error|warning|note):" "$RUNNER_TEMP/build.log" \
+            | sed "s|$GITHUB_WORKSPACE/||" | sort -u || echo "none"
 
   # Builds a project regenerated from project.yml. If this passes while the job
   # above fails, the checked-in .xcodeproj has drifted and needs regenerating.
@@ -46,7 +56,15 @@ jobs:
         run: xcodegen generate
 
       - name: Compile both targets
-        run: scripts/build-check.sh
+        run: |
+          set -o pipefail
+          scripts/build-check.sh 2>&1 | tee "$RUNNER_TEMP/build.log"
+
+      - name: Diagnostics
+        if: always()
+        run: |
+          grep -E "^/.+:[0-9]+:[0-9]+: (error|warning|note):" "$RUNNER_TEMP/build.log" \
+            | sed "s|$GITHUB_WORKSPACE/||" | sort -u || echo "none"
 
       # Lets a broken checked-in project be replaced with this one rather than
       # hand-edited.
