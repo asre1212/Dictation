@@ -1,0 +1,59 @@
+name: Build
+
+# The project was written without a Mac, so the compiler lives here: every push
+# builds both targets on a macOS runner. Signing is switched off, which is what
+# lets this run without a team or a provisioning profile.
+
+on:
+  push:
+    branches: [main, "claude/**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Builds the Dictation.xcodeproj that is checked in — what someone gets when
+  # they clone the repo and hit Run in Xcode.
+  checked-in-project:
+    name: Build (checked-in project)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: Compile both targets
+        run: scripts/build-check.sh
+
+  # Builds a project regenerated from project.yml. If this passes while the job
+  # above fails, the checked-in .xcodeproj has drifted and needs regenerating.
+  generated-project:
+    name: Build (generated from project.yml)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Regenerate the project
+        run: xcodegen generate
+
+      - name: Compile both targets
+        run: scripts/build-check.sh
+
+      # Lets a broken checked-in project be replaced with this one rather than
+      # hand-edited.
+      - name: Upload the generated project
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-xcodeproj
+          path: Dictation.xcodeproj/project.pbxproj
+          if-no-files-found: warn
