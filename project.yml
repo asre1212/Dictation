@@ -1,0 +1,74 @@
+# XcodeGen spec. The checked-in Dictation.xcodeproj is generated from this.
+#
+# You do not need XcodeGen to build — open Dictation.xcodeproj and go. This exists
+# so the project file can be regenerated cleanly after adding or moving files,
+# instead of being hand-edited or merged:
+#
+#     brew install xcodegen && xcodegen generate
+#
+# Set DEVELOPMENT_TEAM here (or in Xcode's Signing & Capabilities) before building
+# to a device. The App Group and Keychain group must match the entitlements files.
+
+name: Dictation
+options:
+  bundleIdPrefix: com.asre1212
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+settings:
+  base:
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "5.0"
+    SWIFT_STRICT_CONCURRENCY: targeted
+    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: ""
+    TARGETED_DEVICE_FAMILY: "1,2"
+
+targets:
+  Dictation:
+    type: application
+    platform: iOS
+    sources:
+      - path: Dictation
+        excludes: ["Info.plist", "Dictation.entitlements"]
+      - path: Shared
+    dependencies:
+      - target: DictationKeyboard
+        embed: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.asre1212.dictation
+        INFOPLIST_FILE: Dictation/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Dictation/Dictation.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        ENABLE_PREVIEWS: YES
+
+  DictationKeyboard:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: DictationKeyboard
+        excludes: ["Info.plist", "DictationKeyboard.entitlements"]
+      # Compiled into both targets. The extension cannot link the app's code, and
+      # a framework would be a third signed binary for ten small files.
+      - path: Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.asre1212.dictation.keyboard
+        INFOPLIST_FILE: DictationKeyboard/Info.plist
+        CODE_SIGN_ENTITLEMENTS: DictationKeyboard/DictationKeyboard.entitlements
+        SKIP_INSTALL: YES
+
+schemes:
+  Dictation:
+    build:
+      targets:
+        Dictation: all
+    run:
+      config: Debug
+    archive:
+      config: Release
