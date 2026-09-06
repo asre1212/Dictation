@@ -4,11 +4,15 @@ Hold a key, speak, and get cleaned-up text — filler words removed, punctuation
 added — inserted into whatever app you are typing in. An iOS custom keyboard
 plus the container app that configures it.
 
-**Status: written, never compiled.** All of this was written on Linux with no
-Xcode, no macOS and no device. It has not been built or run. Treat the first
-build as part of the work, and read
+[![Build](https://github.com/asre1212/Dictation/actions/workflows/build.yml/badge.svg)](https://github.com/asre1212/Dictation/actions/workflows/build.yml)
+
+**Status: compiles, never run.** Both targets build clean for the simulator on
+every push — the badge above is a macOS runner doing exactly what
+`scripts/build-check.sh` does locally. Nothing has been run on a device, and no
+audio has ever gone through this code. Read
 [the feasibility document](docs/iphone-dictation-feasibility.md) before starting
-— the whole product rests on one unproven assumption.
+— the whole product rests on one unproven assumption, and only a device can
+settle it.
 
 ## The assumption
 
@@ -33,6 +37,7 @@ server/                  the proxy the app talks to (Cloudflare Worker)
 docs/                    feasibility and build plan
 project.yml              XcodeGen spec the .xcodeproj is generated from
 scripts/build-check.sh   compile both targets without needing a signing identity
+.github/workflows/       the same compile, on a macOS runner, on every push
 ```
 
 `Shared/` is compiled into both targets rather than being a framework: it is ten
@@ -48,8 +53,9 @@ scripts/build-check.sh
 ```
 
 Builds both targets for the simulator with signing switched off, so it works
-before any of the signing setup below. Since none of this has been through a
-compiler, do this first and fix what it reports.
+before any of the signing setup below. CI runs this same script on every push,
+so it should already be green — run it locally to confirm your Xcode agrees
+before you start changing things.
 
 ### 2. Signing
 
@@ -137,3 +143,11 @@ Phase 0 in [the plan](docs/iphone-dictation-feasibility.md): build to a device,
 grant the microphone, enable Full Access, and confirm the keyboard receives
 non-silent audio buffers across several host apps. Everything downstream depends
 on the answer.
+
+That step needs hardware, and it is the only part of the setup that does. A
+simulator cannot answer it — it has no Full Access to grant and no real audio
+session to refuse — which is why CI stops at the compile.
+
+`AudioRecorder.describe(_:)` names the audio-session errors that failure takes,
+so a Phase 0 refusal reads as "recording not permitted (!pri)" in the status
+strip rather than an opaque number in the log.

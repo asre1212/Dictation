@@ -5,8 +5,10 @@ name: Build
 # lets this run without a team or a provisioning profile.
 
 on:
+  # Branch pushes are covered by the pull_request trigger; running both would
+  # double the macOS minutes for the same commit.
   push:
-    branches: [main, "claude/**"]
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
