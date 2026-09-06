@@ -32,6 +32,7 @@ Shared/                  compiled into both targets
 server/                  the proxy the app talks to (Cloudflare Worker)
 docs/                    feasibility and build plan
 project.yml              XcodeGen spec the .xcodeproj is generated from
+scripts/build-check.sh   compile both targets without needing a signing identity
 ```
 
 `Shared/` is compiled into both targets rather than being a framework: it is ten
@@ -40,18 +41,51 @@ cost paid on every keyboard launch.
 
 ## Getting it running
 
-1. **Signing.** Open `Dictation.xcodeproj`, select your team on both targets.
-2. **App Group.** Both targets need `group.com.asre1212.dictation`. If you change
-   the identifier, change it in `Shared/AppGroup.swift` and both `.entitlements`
-   files too. The app's Settings screen reports whether the group is actually
-   working — a misconfiguration here shows up as "the keyboard ignores my
-   settings" and is otherwise very hard to spot.
-3. **Server.** Deploy `server/` and note its URL and auth token. See
-   [server/README.md](server/README.md).
-4. **On the device.** Run the app, allow the microphone, then
-   Settings › General › Keyboard › Keyboards › Add New Keyboard › Dictation, and
-   turn on **Allow Full Access**. Both are required; neither can be done from
-   the keyboard itself.
+### 1. Compile it
+
+```bash
+scripts/build-check.sh
+```
+
+Builds both targets for the simulator with signing switched off, so it works
+before any of the signing setup below. Since none of this has been through a
+compiler, do this first and fix what it reports.
+
+### 2. Signing
+
+Open `Dictation.xcodeproj` and set your team on **both** targets under Signing &
+Capabilities. Or from the command line:
+
+```bash
+scripts/build-check.sh DEVELOPMENT_TEAM=XXXXXXXXXX
+```
+
+Your team ID is the ten-character string in
+[developer.apple.com/account](https://developer.apple.com/account) under
+Membership.
+
+### 3. App Group
+
+Both targets need `group.com.asre1212.dictation`. If you change the identifier,
+change it in `Shared/AppGroup.swift` and both `.entitlements` files too. The
+app's Settings screen reports whether the group is actually working — a
+misconfiguration here shows up as "the keyboard ignores my settings" and is
+otherwise very hard to spot.
+
+The same identifier doubles as the Keychain access group, which avoids
+hard-coding a team-prefixed string that changes with the signing identity.
+
+### 4. Server
+
+Deploy `server/` and note its URL and auth token. See
+[server/README.md](server/README.md).
+
+### 5. On the device
+
+Run the app and allow the microphone, then
+Settings › General › Keyboard › Keyboards › Add New Keyboard › Dictation, and
+turn on **Allow Full Access**. Both are required, and neither can be done from
+the keyboard itself — that is the whole reason the container app exists.
 
 ## How it fits together
 
