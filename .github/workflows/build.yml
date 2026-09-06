@@ -43,6 +43,25 @@ jobs:
           grep -E "^/.+:[0-9]+:[0-9]+: (error|warning|note):" "$RUNNER_TEMP/build.log" \
             | sed "s|$GITHUB_WORKSPACE/||" | sort -u || echo "none"
 
+  # The simulator hides arm64-only problems, and a device build is the next
+  # thing anyone does with this project. Unsigned, so it needs no team.
+  device-slice:
+    name: Build (iOS device, unsigned)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compile both targets
+        run: |
+          set -o pipefail
+          scripts/build-check.sh --device 2>&1 | tee "$RUNNER_TEMP/build.log"
+
+      - name: Diagnostics
+        if: always()
+        run: |
+          grep -E "^/.+:[0-9]+:[0-9]+: (error|warning|note):" "$RUNNER_TEMP/build.log" \
+            | sed "s|$GITHUB_WORKSPACE/||" | sort -u || echo "none"
+
   # Builds a project regenerated from project.yml. If this passes while the job
   # above fails, the checked-in .xcodeproj has drifted and needs regenerating.
   generated-project:

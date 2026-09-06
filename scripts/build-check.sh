@@ -2,16 +2,30 @@
 #
 # Compile everything without needing a signing identity.
 #
-# This is the first thing to run on a Mac. It builds both targets for the
-# simulator with signing switched off, which is enough to surface every
-# compile error in the project — and since none of this code has ever been
-# through a compiler, expect some.
+# This is the first thing to run on a Mac. It builds both targets with signing
+# switched off, which surfaces every compile error in the project without a
+# team, a provisioning profile or a device.
 #
-# A device build needs signing; see the notes at the bottom.
+#   scripts/build-check.sh              simulator (default)
+#   scripts/build-check.sh --device     iOS device slice, still unsigned
+#
+# --device catches the arm64-only problems the simulator hides. Installing on a
+# device is a separate matter and does need signing; see the notes at the bottom.
 
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
+
+sdk="iphonesimulator"
+destination="generic/platform=iOS Simulator"
+what="the simulator"
+
+if [ "${1:-}" = "--device" ]; then
+    sdk="iphoneos"
+    destination="generic/platform=iOS"
+    what="an iOS device (unsigned)"
+    shift
+fi
 
 if ! command -v xcodebuild >/dev/null 2>&1; then
     echo "xcodebuild not found. Install Xcode from the App Store, then:"
@@ -20,7 +34,7 @@ if ! command -v xcodebuild >/dev/null 2>&1; then
 fi
 
 echo "==> $(xcodebuild -version | head -1)"
-echo "==> Building Dictation (app + keyboard extension) for the simulator"
+echo "==> Building Dictation (app + keyboard extension) for $what"
 echo
 
 # CODE_SIGNING_ALLOWED=NO is what lets this run before a team is configured.
@@ -28,8 +42,8 @@ echo
 xcodebuild \
     -project Dictation.xcodeproj \
     -scheme Dictation \
-    -sdk iphonesimulator \
-    -destination 'generic/platform=iOS Simulator' \
+    -sdk "$sdk" \
+    -destination "$destination" \
     -configuration Debug \
     CODE_SIGNING_ALLOWED=NO \
     CODE_SIGNING_REQUIRED=NO \

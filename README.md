@@ -57,6 +57,13 @@ before any of the signing setup below. CI runs this same script on every push,
 so it should already be green — run it locally to confirm your Xcode agrees
 before you start changing things.
 
+```bash
+scripts/build-check.sh --device
+```
+
+The same build for the device slice, still unsigned. Catches the arm64-only
+problems the simulator hides, without needing a team.
+
 ### 2. Signing
 
 Open `Dictation.xcodeproj` and set your team on **both** targets under Signing &
