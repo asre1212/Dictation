@@ -32,7 +32,11 @@ api.subscribe(event => {
   if (event.type === 'state') render(event.state);
   if (event.type === 'progress') { $('progress').hidden = false; $('progress').value = event.progress.progress || 0; }
   if (event.type === 'transcript') {
-    if (event.text) $('draft').value = ($('draft').value + ($('draft').value ? '\n\n' : '') + event.text).slice(-100000);
+    if (event.text) {
+      const combined = $('draft').value + ($('draft').value ? '\n\n' : '') + event.text;
+      if (combined.length > 100000) { showError('Draft is full. The new transcription remains on the iPhone. Copy and clear this draft before continuing.'); return; }
+      $('draft').value = combined;
+    }
     else showError('No speech detected. Try again closer to the microphone.');
     undoText = null; $('undo').disabled = true; count();
   }

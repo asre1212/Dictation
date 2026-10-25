@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, protocol, net, clipboard, powerMonitor } = require('electron');
+const { app, BrowserWindow, ipcMain, protocol, net, clipboard, powerMonitor, session: electronSession } = require('electron');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { Worker } = require('node:worker_threads');
@@ -51,7 +51,7 @@ function handle(channel, fn) {
 app.whenReady().then(async () => {
   const { startReceiver, localAddresses } = await import('./receiver.mjs');
   const QRCode = require('qrcode');
-  protocol.handle('dictation', request => {
+  electronSession.fromPartition('dictation-memory').protocol.handle('dictation', request => {
     const url = new URL(request.url);
     const allowed = new Set(['/index.html', '/app.js', '/styles.css', '/text-format.mjs']);
     if (url.hostname !== 'app' || !allowed.has(url.pathname)) return new Response('Not found', { status: 404 });

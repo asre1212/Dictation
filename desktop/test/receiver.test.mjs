@@ -80,3 +80,12 @@ test('PCM conversion preserves signed little-endian amplitudes and screens silen
 test('explicit formatting preserves dose, negation and clinical terminology', () => {
   assert.equal(formatCommands('No melena. New paragraph Continue omeprazole 20 mg. New line No change.'), 'No melena.\n\nContinue omeprazole 20 mg.\nNo change.');
 });
+test('rejects a certificate pin mismatch before sending audio', async t => {
+  const s = await setup(t);
+  await assert.rejects(new Promise((resolve, reject) => {
+    const req = https.request({ hostname: '127.0.0.1', port: s.server.port, ca: identity.cert,
+      checkServerIdentity: () => new Error('Certificate pin mismatch') }, resolve);
+    req.on('error', reject); req.end();
+  }), /Certificate pin mismatch/);
+  assert.equal(s.events.length, 0);
+});

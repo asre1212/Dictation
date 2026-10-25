@@ -20,6 +20,9 @@ export async function startReceiver({ transcribe, onEvent = () => {}, identity, 
   const started = now(); let lastActivity = started; let deviceId = null; let closed = false;
   let busy = false; let activeRequests = 0;
   const recent = new Map(); const failures = new Map();
+  const expireResponses = () => {
+    for (const [key, entry] of recent) if (now() - entry.time > 300000) entry.result = { id: key, text: '', alreadyDelivered: true, reviewRequired: true };
+  };
   const send = (res, status, data) => { if (!res.destroyed) { res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' }); res.end(JSON.stringify(data)); } };
   async function readBody(req, max) {
     if (Number(req.headers['content-length']) > max) throw new Error('size');
@@ -63,16 +66,16 @@ export async function startReceiver({ transcribe, onEvent = () => {}, identity, 
         pcm = await readBody(req, MAX_AUDIO_BYTES);
         if (!pcm.length || pcm.length % 2) return send(res, 400, { error: 'Expected mono 16 kHz Int16 PCM.' });
         const hash = createHash('sha256').update(pcm).digest('hex');
-        for (const [key, entry] of recent) if (now() - entry.time > 300000) entry.result = { id: key, text: '', alreadyDelivered: true, reviewRequired: true };
+        expireResponses();
         const previous = recent.get(id);
         if (previous) return send(res, previous.hash === hash ? 200 : 409, previous.hash === hash ? previous.result : { error: 'Request ID conflict.' });
+        if (recent.size >= 1000) { send(res, 410, { error: 'Start a new session.' }); close(); onEvent({ type: 'expired' }); return; }
         onEvent({ type: 'transcribing' }); lastActivity = now();
         const text = await transcribe(pcm);
         if (closed) return send(res, 410, { error: 'Session ended.' });
         const result = { id, text: String(text).slice(0, 30000), reviewRequired: true };
         recent.set(id, { hash, result, time: now() });
         // Keep delivery IDs for the full session so late retries never duplicate drafts.
-        if (recent.size >= 1000) { close(); onEvent({ type: 'expired' }); }
         lastActivity = now(); onEvent({ type: 'transcript', ...result });
         return send(res, 200, result);
       } finally { pcm?.fill(0); busy = false; }
@@ -86,7 +89,7 @@ export async function startReceiver({ transcribe, onEvent = () => {}, identity, 
   await new Promise((resolve, reject) => { server.once('error', reject); server.listen(port, host, resolve); });
   const actualPort = server.address().port;
   const close = () => { closed = true; recent.clear(); failures.clear(); server.closeAllConnections(); server.close(); clearInterval(expiry); };
-  const expiry = setInterval(() => { if (now() - started > 8 * 3600000 || now() - lastActivity > 30 * 60000) { close(); onEvent({ type: 'expired' }); } }, 10000);
+  const expiry = setInterval(() => { expireResponses(); if (now() - started > 8 * 3600000 || now() - lastActivity > 30 * 60000) { close(); onEvent({ type: 'expired' }); } }, 10000);
   expiry.unref();
   return { port: actualPort, token, fingerprint: tls.fingerprint, pairingLink: address => createPairingLink(address, actualPort, token, tls.fingerprint), close };
 }
