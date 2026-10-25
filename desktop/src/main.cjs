@@ -5,15 +5,25 @@ const { Worker } = require('node:worker_threads');
 protocol.registerSchemesAsPrivileged([{ scheme: 'dictation', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 let win, worker, receiver, loading = false, ready = false, stopping = false, sequence = 0, copiedText = '', clipboardTimer;
 const pending = new Map();
+let clipboardWork = Promise.resolve();
+let quitCleared = false;
+function withClipboard(action) { const operation = clipboardWork.then(action); clipboardWork = operation.catch(() => {}); return operation; }
 const state = { model: 'base', ready: false, listening: false, paired: false, addresses: [], port: null, qr: null, pairingLink: '', status: 'Download a speech model to begin.' };
 const emit = event => { if (win && !win.isDestroyed()) win.webContents.send('dictation:event', event); };
 const publish = () => emit({ type: 'state', state: { ...state } });
 function stopSession() {
   receiver?.close(); receiver = null;
   Object.assign(state, { listening: false, paired: false, qr: null, pairingLink: '', port: null, status: ready ? 'Session ended. Start a new session to pair.' : 'Load a model to begin.' });
-  clearClipboard(); emit({ type: 'clear' }); publish();
+  const clearing = clearClipboard(); emit({ type: 'clear' }); publish();
+  return clearing.catch(() => { state.status = 'Clipboard could not be cleared. Clear it manually.'; publish(); });
 }
-function clearClipboard() { clearTimeout(clipboardTimer); if (copiedText && clipboard.readText() === copiedText) clipboard.clear(); copiedText = ''; }
+function clearClipboard() {
+  return withClipboard(async () => {
+    clearTimeout(clipboardTimer);
+    if (copiedText && await clipboard.readText() === copiedText) clipboard.clear();
+    copiedText = '';
+  });
+}
 function stopWorker() {
   const old = worker; worker = null; ready = false; state.ready = false;
   for (const item of pending.values()) { clearTimeout(item.timer); item.reject(new Error('Speech engine stopped. Load the model again.')); }
@@ -89,12 +99,24 @@ app.whenReady().then(async () => {
       Object.assign(state, { listening: true, paired: false, port: receiver.port, pairingLink: link, qr: await QRCode.toDataURL(link, { width: 280, margin: 2 }), status: 'Scan this code with the iPhone app. Code expires in 10 minutes.' }); publish();
     } finally { stopping = false; }
   });
-  handle('stop-session', () => { stopSession(); stopWorker(); publish(); });
-  handle('copy', text => { if (typeof text !== 'string' || text.length > 100000) throw new Error('Invalid text.'); clipboard.writeText(text); copiedText = text; clearTimeout(clipboardTimer); clipboardTimer = setTimeout(clearClipboard, 120000); return true; });
-  handle('clear', () => { clearClipboard(); return true; });
+  handle('stop-session', async () => { const clearing = stopSession(); stopWorker(); publish(); await clearing; });
+  handle('copy', text => {
+    if (typeof text !== 'string' || text.length > 100000) throw new Error('Invalid text.');
+    return withClipboard(async () => {
+      await clipboard.writeText(text); copiedText = text; clearTimeout(clipboardTimer);
+      clipboardTimer = setTimeout(() => { clearClipboard().catch(() => { state.status = 'Clear the clipboard manually.'; publish(); }); }, 120000);
+      return true;
+    });
+  });
+  handle('clear', async () => { await clearClipboard(); return true; });
   await win.loadURL('dictation://app/index.html');
   const lock = () => { stopSession(); stopWorker(); publish(); };
   powerMonitor.on('lock-screen', lock); powerMonitor.on('suspend', lock);
 });
-app.on('before-quit', () => { stopSession(); stopWorker(); });
+app.on('before-quit', event => {
+  if (quitCleared) return;
+  event.preventDefault();
+  const clearing = stopSession(); stopWorker();
+  clearing.finally(() => { quitCleared = true; app.quit(); });
+});
 app.on('window-all-closed', () => app.quit());
