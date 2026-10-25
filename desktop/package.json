@@ -58,9 +58,13 @@
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "Dictation-Desktop-${version}-win-${arch}-Setup.${ext}"
     },
-    "artifactName": "Dictation-Desktop-${version}-${os}-${arch}.${ext}"
+    "artifactName": "Dictation-Desktop-${version}-${os}-${arch}.${ext}",
+    "portable": {
+      "artifactName": "Dictation-Desktop-${version}-win-${arch}-Portable.${ext}"
+    }
   },
   "overrides": {
     "sharp": "0.35.5"
