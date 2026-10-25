@@ -1,6 +1,8 @@
 // Runs the real Electron app on Mac/Windows CI, including its custom scheme,
 // sandboxed preload, IPC sender checks, editor and clipboard.
 const { app, clipboard } = require('electron');
+// Hosted Intel Mac runners lack a usable GPU; exercise the same UI via software rendering.
+app.disableHardwareAcceleration();
 const fs = require('node:fs');
 const path = require('node:path');
 const timer = setTimeout(() => { console.error('Electron UI smoke timed out'); app.exit(1); }, 30000);
