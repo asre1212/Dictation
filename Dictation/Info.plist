@@ -44,5 +44,11 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Connect directly to your paired computer for encrypted, local medical dictation.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Scan the private pairing code displayed on your computer.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Verify your identity before pairing a medical dictation session.</string>
 </dict>
 </plist>

@@ -1,0 +1,68 @@
+{
+  "name": "dictation-desktop",
+  "version": "1.0.0",
+  "description": "Private iPhone medical dictation companion for macOS and Windows",
+  "author": "asre1212",
+  "private": true,
+  "type": "module",
+  "main": "src/main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.mjs",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder --publish never",
+    "smoke": "electron test/smoke.cjs"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "3.8.1",
+    "qrcode": "1.5.4",
+    "selfsigned": "5.5.0"
+  },
+  "devDependencies": {
+    "electron": "45.0.0",
+    "electron-builder": "26.18.0"
+  },
+  "build": {
+    "appId": "com.asre1212.dictation.desktop",
+    "productName": "Dictation Desktop",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "src/**/*",
+      "ui/**/*",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "node_modules/onnxruntime-node/**/*",
+      "node_modules/sharp/**/*",
+      "node_modules/@img/**/*"
+    ],
+    "npmRebuild": false,
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.medical",
+      "hardenedRuntime": true,
+      "extendInfo": {
+        "NSLocalNetworkUsageDescription": "Receive encrypted dictation audio from your paired iPhone."
+      }
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "artifactName": "Dictation-Desktop-${version}-${os}-${arch}.${ext}"
+  },
+  "overrides": {
+    "sharp": "0.35.5"
+  }
+}

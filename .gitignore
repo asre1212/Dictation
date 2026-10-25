@@ -22,3 +22,9 @@ xcuserdata/
 node_modules/
 .wrangler/
 .dev.vars
+
+# Desktop outputs / private model cache
+desktop/release/
+*.log
+.models/
+desktop/smoke.png

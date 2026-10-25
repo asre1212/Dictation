@@ -11,6 +11,15 @@ struct OnboardingView: View {
     var body: some View {
         NavigationStack {
             List {
+                Section("Use with a Mac or Windows computer") {
+                    Text("Choose Desktop for encrypted, local transcription. No cloud server or keyboard setup is needed for that mode.")
+                    Button("Use Desktop mode") { model.hasCompletedOnboarding = true }
+                }
+                Section {
+                    Text("The keyboard and original Dictate tab use the separately configured cloud service. Do not use them with patient information without an approved vendor and workflow.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
+
                 Section {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Speak anywhere")

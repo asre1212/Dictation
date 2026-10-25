@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		6D2AFD5067D1F718D847E2CC /* DesktopView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D2BB0F4F4ED902604950D99 /* DesktopView.swift */; };
+		3676A6D3517AB111C39F0DFC /* DesktopSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E7510A9187889BBF488B10 /* DesktopSession.swift */; };
 		FD50C5F6913B5CC37DC6552D /* DictationApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB99259E2644F9BF058E6416 /* DictationApp.swift */; };
 		D8F31C48F886FDDDB3CA5E4A /* QuickCaptureIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FF172D3EF82402C21F53C70 /* QuickCaptureIntent.swift */; };
 		2C2D31A3C55E48BF8202477D /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 294C52CF8932EF78A9A87D05 /* AppModel.swift */; };
@@ -72,6 +74,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		7D2BB0F4F4ED902604950D99 /* DesktopView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopView.swift; sourceTree = "<group>"; };
+		D4E7510A9187889BBF488B10 /* DesktopSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopSession.swift; sourceTree = "<group>"; };
 		E9701443E0FE36D5DC678DE3 /* AppGroup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppGroup.swift; sourceTree = "<group>"; };
 		2B5FFCBC2FF3D4DF5FC4682C /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
 		7618BD3B1781C529852A713B /* AudioRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioRecorder.swift; sourceTree = "<group>"; };
@@ -170,6 +174,7 @@
 		3F32C9ADDE700689CAA6BCED /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				7D2BB0F4F4ED902604950D99 /* DesktopView.swift */,
 				8550B5D6807F8543E86B367E /* CaptureView.swift */,
 				63349E4108DF92D141EC50A8 /* HistoryView.swift */,
 				C0A1340AA2293D5C475ECB26 /* OnboardingView.swift */,
@@ -183,6 +188,7 @@
 		638E67536DF18769E36BD472 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				D4E7510A9187889BBF488B10 /* DesktopSession.swift */,
 				294C52CF8932EF78A9A87D05 /* AppModel.swift */,
 				9A08154598F5DACAECD731E4 /* CaptureModel.swift */,
 			);
@@ -340,6 +346,8 @@
 				D8F31C48F886FDDDB3CA5E4A /* QuickCaptureIntent.swift in Sources */,
 				2C2D31A3C55E48BF8202477D /* AppModel.swift in Sources */,
 				1758C86B7CE190A5F8DA801E /* CaptureModel.swift in Sources */,
+				6D2AFD5067D1F718D847E2CC /* DesktopView.swift in Sources */,
+				3676A6D3517AB111C39F0DFC /* DesktopSession.swift in Sources */,
 				466B4C7F1E9379E6E7B4AC1F /* CaptureView.swift in Sources */,
 				7781EA96171CBCEB91706EB2 /* HistoryView.swift in Sources */,
 				E30FC90CC3006CB3C670A286 /* OnboardingView.swift in Sources */,

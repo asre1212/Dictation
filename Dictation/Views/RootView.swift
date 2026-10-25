@@ -2,9 +2,13 @@ import SwiftUI
 
 struct RootView: View {
     @EnvironmentObject private var model: AppModel
+    @StateObject private var desktop = DesktopSession()
 
     var body: some View {
         TabView {
+            DesktopView(desktop: desktop)
+                .tabItem { Label("Desktop", systemImage: "desktopcomputer") }
+
             CaptureView()
                 .tabItem { Label("Dictate", systemImage: "mic") }
 

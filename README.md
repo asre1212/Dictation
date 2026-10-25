@@ -1,5 +1,21 @@
 # Dictation
 
+## Mac / Windows medical dictation companion
+
+The new **Desktop** mode connects the native iPhone app directly to a Mac or Windows computer with QR pairing and certificate-pinned HTTPS. Hugging Face Whisper runs locally on the computer. Review/edit drafts and copy explicitly into the intended chart.
+
+- [Install and connect](desktop/README.md)
+- [Download desktop build artifacts](https://github.com/asre1212/Dictation/actions/workflows/desktop.yml)
+- [HIPAA readiness and deployment gaps](docs/hipaa-readiness.md)
+
+Shared networking or a reachable private VPN is required. Builds are initially unsigned; real-device and institutional validation remain necessary. This mode does not rely on microphone access inside an iOS keyboard extension.
+
+---
+
+## Original iPhone keyboard / cloud mode
+
+The following describes the original keyboard workflow, which remains separate from local Desktop mode. Its cloud vendors and retained history need independent approval before use with patient information.
+
 Hold a key, speak, and get cleaned-up text — filler words removed, punctuation
 added — inserted into whatever app you are typing in. An iOS custom keyboard
 plus the container app that configures it.
