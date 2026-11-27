@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct SettingsView: View {
     @EnvironmentObject private var model: AppModel
@@ -69,6 +70,8 @@ struct SettingsView: View {
                     Text("History is stored only on this device, in the container shared with the keyboard. Audio is never written to disk.")
                 }
 
+                AutoBackupSection()
+
                 Section("Setup") {
                     LabeledContent("Microphone") {
                         StatusText(isGood: model.isMicrophoneGranted, good: "Allowed", bad: "Not allowed")
@@ -110,5 +113,103 @@ private struct StatusText: View {
     var body: some View {
         Text(isGood ? good : bad)
             .foregroundStyle(isGood ? .green : .orange)
+    }
+}
+
+
+private struct AutoBackupSection: View {
+    @EnvironmentObject private var model: AppModel
+    @State private var pendingRestore: BackupSnapshot?
+    @State private var askingToRestore = false
+    @State private var exportDocument: SettingsBackupDocument?
+    @State private var exportFilename = "Dictation-settings-backup"
+    @State private var exporting = false
+    @State private var importing = false
+    @State private var status: String?
+
+    var body: some View {
+        Section {
+            Toggle("Auto Backup", isOn: Binding(
+                get: { model.backupState.enabled },
+                set: { model.setBackupEnabled($0) }
+            ))
+            ForEach(model.backupState.copies) { snapshot in
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(snapshot.savedAt.formatted(date: .abbreviated, time: .shortened))
+                    HStack {
+                        Button("Restore") { confirmRestore(snapshot) }
+                        Spacer()
+                        Button("Export to Files") { export(snapshot) }
+                    }
+                    .buttonStyle(.borderless)
+                }
+            }
+            Button("Import from Files") { importing = true }
+            if let message = status ?? model.backupMessage {
+                Text(message).font(.footnote).foregroundStyle(.secondary)
+            }
+        } header: {
+            Text("Backup and recovery")
+        } footer: {
+            Text("Keeps the last two different saved copies of keyboard settings and custom vocabulary on this device. It never copies recordings, transcripts, history settings, or server details. Export to Files to keep a separate copy if you remove the app or move to a new phone.")
+        }
+        .confirmationDialog("Replace current settings and vocabulary?", isPresented: $askingToRestore, titleVisibility: .visible) {
+            Button("Restore backup", role: .destructive) {
+                if let pendingRestore { model.restoreBackup(pendingRestore) }
+                pendingRestore = nil
+            }
+            Button("Cancel", role: .cancel) { pendingRestore = nil }
+        } message: {
+            Text("Only the settings covered by Auto Backup and your custom vocabulary will be replaced. Dictation history and server details will not change.")
+        }
+        .fileExporter(isPresented: $exporting, document: exportDocument, contentType: .json, defaultFilename: exportFilename) { result in
+            switch result {
+            case .success: status = "Backup exported."
+            case .failure: status = "Couldn't export the backup."
+            }
+        }
+        .fileImporter(isPresented: $importing, allowedContentTypes: [.json]) { result in
+            do {
+                let url = try result.get()
+                let scoped = url.startAccessingSecurityScopedResource()
+                defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+                let data = try BackupStore.readBounded(url)
+                confirmRestore(try BackupStore.decode(data))
+            } catch {
+                status = "Couldn't read a valid Dictation settings backup."
+            }
+        }
+    }
+
+    private func confirmRestore(_ snapshot: BackupSnapshot) {
+        status = nil
+        pendingRestore = snapshot
+        askingToRestore = true
+    }
+
+    private func export(_ snapshot: BackupSnapshot) {
+        do {
+            exportDocument = SettingsBackupDocument(data: try BackupStore.export(snapshot))
+            exportFilename = "Dictation-settings-\(Int(snapshot.savedAt.timeIntervalSince1970))"
+            exporting = true
+        } catch {
+            status = "Couldn't prepare this backup for export."
+        }
+    }
+}
+
+private struct SettingsBackupDocument: FileDocument {
+    static var readableContentTypes: [UTType] { [.json] }
+    let data: Data
+
+    init(data: Data) { self.data = data }
+
+    init(configuration: ReadConfiguration) throws {
+        guard let data = configuration.file.regularFileContents else { throw BackupStore.Issue.invalid }
+        self.data = data
+    }
+
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+        FileWrapper(regularFileWithContents: data)
     }
 }

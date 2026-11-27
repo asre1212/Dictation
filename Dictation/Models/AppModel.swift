@@ -14,6 +14,7 @@ final class AppModel: ObservableObject {
         didSet {
             guard settings != oldValue else { return }
             SettingsStore.save(settings)
+            captureBackupIfEnabled()
         }
     }
 
@@ -21,6 +22,10 @@ final class AppModel: ObservableObject {
     @Published private(set) var history: [DictationRecord] = []
     @Published private(set) var microphonePermission: AVAudioApplication.recordPermission
     @Published var token: String
+    @Published private(set) var backupState = BackupStore.State()
+    @Published private(set) var backupMessage: String?
+    private var backupStore: BackupStore?
+    private var restoringBackup = false
 
     /// Set once the user has been through onboarding. Backed by the App Group
     /// rather than `@AppStorage`, which only republishes from inside a `View` —
@@ -40,6 +45,70 @@ final class AppModel: ObservableObject {
         token = KeychainStore.loadToken() ?? ""
         hasCompletedOnboarding = AppGroup.defaults.bool(forKey: Self.onboardingKey)
         refreshHistory()
+        do {
+            let store = try BackupStore.applicationStore()
+            backupState = try store.load()
+            backupStore = store
+        } catch {
+            backupMessage = "Couldn't read your local backups. Existing files weren't replaced."
+        }
+    }
+
+    // MARK: - Auto Backup
+
+    private var backupPayload: BackupPayload {
+        BackupPayload(preferences: BackupPreferences(settings), vocabulary: vocabulary)
+    }
+
+    func setBackupEnabled(_ enabled: Bool) {
+        var next = backupState
+        next.enabled = enabled
+        do {
+            if enabled { try next.capture(backupPayload) }
+            try saveBackupState(next)
+        } catch {
+            backupMessage = "Couldn't change Auto Backup. Existing copies weren't changed."
+        }
+    }
+
+    func restoreBackup(_ snapshot: BackupSnapshot) {
+        do {
+            try snapshot.payload.validate()
+            // Preserve the current state before changing the live records. A write
+            // failure must not silently invalidate the existing recovery copies.
+            if backupState.enabled {
+                var next = backupState
+                try next.capture(backupPayload)
+                try saveBackupState(next)
+            }
+            restoringBackup = true
+            settings = snapshot.payload.preferences.applying(to: settings)
+            vocabulary = snapshot.payload.vocabulary
+            VocabularyStore.save(vocabulary)
+            restoringBackup = false
+            captureBackupIfEnabled()
+            if backupMessage == nil { backupMessage = "Settings and vocabulary restored." }
+        } catch {
+            backupMessage = "Couldn't restore this backup. Current preferences weren't changed."
+        }
+    }
+
+    private func captureBackupIfEnabled() {
+        guard backupState.enabled, !restoringBackup, backupState.copies.first?.payload != backupPayload else { return }
+        var next = backupState
+        do {
+            try next.capture(backupPayload)
+            try saveBackupState(next)
+        } catch {
+            backupMessage = "Couldn't save a new backup. Previous copies are still available."
+        }
+    }
+
+    private func saveBackupState(_ next: BackupStore.State) throws {
+        guard let backupStore else { throw BackupStore.Issue.invalid }
+        try backupStore.save(next)
+        backupState = next
+        backupMessage = nil
     }
 
     // MARK: - Readiness
@@ -104,11 +173,13 @@ final class AppModel: ObservableObject {
 
         vocabulary.append(VocabularyTerm(term: trimmed, soundsLike: soundsLike))
         VocabularyStore.save(vocabulary)
+        captureBackupIfEnabled()
     }
 
     func deleteTerms(at offsets: IndexSet) {
         vocabulary.remove(atOffsets: offsets)
         VocabularyStore.save(vocabulary)
+        captureBackupIfEnabled()
     }
 
     // MARK: - History

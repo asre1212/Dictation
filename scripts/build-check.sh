@@ -33,6 +33,12 @@ if ! command -v xcodebuild >/dev/null 2>&1; then
     exit 1
 fi
 
+test_tmp="$(mktemp -d)"
+trap 'rm -rf "$test_tmp"' EXIT
+swiftc -o "$test_tmp/check-backup" Shared/AppGroup.swift Shared/AppSettings.swift \
+    Shared/Vocabulary.swift Dictation/Models/AutoBackup.swift tests/AutoBackupChecks.swift
+"$test_tmp/check-backup"
+
 echo "==> $(xcodebuild -version | head -1)"
 echo "==> Building Dictation (app + keyboard extension) for $what"
 echo
