@@ -174,3 +174,7 @@ session to refuse — which is why CI stops at the compile.
 `AudioRecorder.describe(_:)` names the audio-session errors that failure takes,
 so a Phase 0 refusal reads as "recording not permitted (!pri)" in the status
 strip rather than an opaque number in the log.
+
+### Local Auto Backup (native iOS)
+
+In Settings → Backup and recovery, turn on Auto Backup to keep the latest two different copies of your keyboard preferences and custom vocabulary. Recovery copies are stored on-device; use **Export to Files** to keep a separate copy, and **Import from Files** to restore one. Automatic copies exclude audio, transcripts, history retention settings, and server credentials or URLs. The desktop receiver continues to keep its draft in memory only.

@@ -12,6 +12,7 @@
 		FD50C5F6913B5CC37DC6552D /* DictationApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB99259E2644F9BF058E6416 /* DictationApp.swift */; };
 		D8F31C48F886FDDDB3CA5E4A /* QuickCaptureIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FF172D3EF82402C21F53C70 /* QuickCaptureIntent.swift */; };
 		2C2D31A3C55E48BF8202477D /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 294C52CF8932EF78A9A87D05 /* AppModel.swift */; };
+		219BE87A0D8A434DA0AC9271 /* AutoBackup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44D834BCAF85400DB4E25511 /* AutoBackup.swift */; };
 		1758C86B7CE190A5F8DA801E /* CaptureModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A08154598F5DACAECD731E4 /* CaptureModel.swift */; };
 		0D5FCAEC8027A3E10845EEE3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 849345360D98F4D614214E95 /* Assets.xcassets */; };
 		466B4C7F1E9379E6E7B4AC1F /* CaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8550B5D6807F8543E86B367E /* CaptureView.swift */; };
@@ -89,6 +90,7 @@
 		CB99259E2644F9BF058E6416 /* DictationApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictationApp.swift; sourceTree = "<group>"; };
 		5FF172D3EF82402C21F53C70 /* QuickCaptureIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickCaptureIntent.swift; sourceTree = "<group>"; };
 		294C52CF8932EF78A9A87D05 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		44D834BCAF85400DB4E25511 /* AutoBackup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoBackup.swift; sourceTree = "<group>"; };
 		9A08154598F5DACAECD731E4 /* CaptureModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureModel.swift; sourceTree = "<group>"; };
 		8550B5D6807F8543E86B367E /* CaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureView.swift; sourceTree = "<group>"; };
 		63349E4108DF92D141EC50A8 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
@@ -190,6 +192,7 @@
 			children = (
 				D4E7510A9187889BBF488B10 /* DesktopSession.swift */,
 				294C52CF8932EF78A9A87D05 /* AppModel.swift */,
+				44D834BCAF85400DB4E25511 /* AutoBackup.swift */,
 				9A08154598F5DACAECD731E4 /* CaptureModel.swift */,
 			);
 			path = Models;
@@ -345,6 +348,7 @@
 				FD50C5F6913B5CC37DC6552D /* DictationApp.swift in Sources */,
 				D8F31C48F886FDDDB3CA5E4A /* QuickCaptureIntent.swift in Sources */,
 				2C2D31A3C55E48BF8202477D /* AppModel.swift in Sources */,
+				219BE87A0D8A434DA0AC9271 /* AutoBackup.swift in Sources */,
 				1758C86B7CE190A5F8DA801E /* CaptureModel.swift in Sources */,
 				6D2AFD5067D1F718D847E2CC /* DesktopView.swift in Sources */,
 				3676A6D3517AB111C39F0DFC /* DesktopSession.swift in Sources */,
