@@ -175,6 +175,8 @@ session to refuse — which is why CI stops at the compile.
 so a Phase 0 refusal reads as "recording not permitted (!pri)" in the status
 strip rather than an opaque number in the log.
 
-### Local Auto Backup (native iOS)
+### Auto Backup to Files (native iOS)
 
-In Settings → Backup and recovery, turn on Auto Backup to keep the latest two different copies of your keyboard preferences and custom vocabulary. Recovery copies are stored on-device; use **Export to Files** to keep a separate copy, and **Import from Files** to restore one. Automatic copies exclude audio, transcripts, history retention settings, and server credentials or URLs. The desktop receiver continues to keep its draft in memory only.
+In Settings → Backup and recovery, choose a Files folder once. Dictation verifies and updates the latest two different saves of keyboard preferences and custom vocabulary there. No new automatic copies are written inside the app. Older on-device copies, if any, remain read-only and can still be manually exported or restored. Leave the folder unselected to keep Auto Backup off; if iOS revokes access, select it again. You can always manually export to Files or import an exported backup.
+
+Automatic copies exclude audio, transcripts, history retention settings, and server credentials or URLs. The desktop receiver continues to keep its draft in memory only.

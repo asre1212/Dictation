@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import UniformTypeIdentifiers
 
 struct SettingsView: View {
@@ -125,33 +126,50 @@ private struct AutoBackupSection: View {
     @State private var exportFilename = "Dictation-settings-backup"
     @State private var exporting = false
     @State private var importing = false
+    @State private var pickingFolder = false
     @State private var status: String?
 
     var body: some View {
         Section {
-            Toggle("Auto Backup", isOn: Binding(
-                get: { model.backupState.enabled },
-                set: { model.setBackupEnabled($0) }
-            ))
-            ForEach(model.backupState.copies) { snapshot in
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(snapshot.savedAt.formatted(date: .abbreviated, time: .shortened))
-                    HStack {
-                        Button("Restore") { confirmRestore(snapshot) }
-                        Spacer()
-                        Button("Export to Files") { export(snapshot) }
+            if let folder = model.backupDestination {
+                LabeledContent("Auto Backup folder", value: folder.name)
+                Button("Change Files folder") { pickingFolder = true }
+                Button("Turn off Auto Backup") { status = nil; model.disconnectBackupFolder() }
+            } else {
+                Button("Choose Files folder for Auto Backup") { pickingFolder = true }
+            }
+            Button("Export current settings to Files") { export(model.currentBackup()) }
+            Button("Import from Files") { importing = true }
+            if !model.legacyBackups.isEmpty {
+                DisclosureGroup("Older on-device copies (read-only)") {
+                    ForEach(model.legacyBackups) { snapshot in
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(snapshot.savedAt.formatted(date: .abbreviated, time: .shortened))
+                            HStack {
+                                Button("Restore") { confirmRestore(snapshot) }
+                                Spacer()
+                                Button("Export to Files") { export(snapshot) }
+                            }
+                            .buttonStyle(.borderless)
+                        }
                     }
-                    .buttonStyle(.borderless)
                 }
             }
-            Button("Import from Files") { importing = true }
             if let message = status ?? model.backupMessage {
                 Text(message).font(.footnote).foregroundStyle(.secondary)
             }
         } header: {
             Text("Backup and recovery")
         } footer: {
-            Text("Keeps the last two different saved copies of keyboard settings and custom vocabulary on this device. It never copies recordings, transcripts, history settings, or server details. Export to Files to keep a separate copy if you remove the app or move to a new phone.")
+            Text("Choose a Files folder once. Auto Backup writes the latest two different saves there, never inside Dictation. Backups include keyboard preferences and custom vocabulary only. Recordings, transcripts, history settings and server details are excluded.")
+
+        }
+        .sheet(isPresented: $pickingFolder) {
+            FilesFolderPicker { url in
+                status = nil
+                pickingFolder = false
+                if let url { model.selectBackupFolder(url) }
+            }
         }
         .confirmationDialog("Replace current settings and vocabulary?", isPresented: $askingToRestore, titleVisibility: .visible) {
             Button("Restore backup", role: .destructive) {
@@ -194,6 +212,32 @@ private struct AutoBackupSection: View {
             exporting = true
         } catch {
             status = "Couldn't prepare this backup for export."
+        }
+    }
+}
+
+private struct FilesFolderPicker: UIViewControllerRepresentable {
+    var completed: (URL?) -> Void
+
+    func makeCoordinator() -> Coordinator { Coordinator(completed: completed) }
+
+    func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.folder], asCopy: false)
+        picker.allowsMultipleSelection = false
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ picker: UIDocumentPickerViewController, context: Context) {}
+
+    final class Coordinator: NSObject, UIDocumentPickerDelegate {
+        let completed: (URL?) -> Void
+        init(completed: @escaping (URL?) -> Void) { self.completed = completed }
+        func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+            completed(urls.first)
+        }
+        func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+            completed(nil)
         }
     }
 }

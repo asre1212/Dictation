@@ -14,7 +14,7 @@ final class AppModel: ObservableObject {
         didSet {
             guard settings != oldValue else { return }
             SettingsStore.save(settings)
-            captureBackupIfEnabled()
+            if BackupPreferences(oldValue) != BackupPreferences(settings) { captureBackupIfEnabled() }
         }
     }
 
@@ -22,9 +22,12 @@ final class AppModel: ObservableObject {
     @Published private(set) var history: [DictationRecord] = []
     @Published private(set) var microphonePermission: AVAudioApplication.recordPermission
     @Published var token: String
-    @Published private(set) var backupState = BackupStore.State()
+    @Published private(set) var legacyBackups: [BackupSnapshot] = []
+    @Published private(set) var backupDestination: ExternalFolderBackup.Destination?
     @Published private(set) var backupMessage: String?
-    private var backupStore: BackupStore?
+    private var backupTask: Task<Void, Never>?
+    private static let backupDestinationKey = "external-backup-destination-v1"
+    private static let backupOwnerKey = "external-backup-owner-v1"
     private var restoringBackup = false
 
     /// Set once the user has been through onboarding. Backed by the App Group
@@ -47,10 +50,13 @@ final class AppModel: ObservableObject {
         refreshHistory()
         do {
             let store = try BackupStore.applicationStore()
-            backupState = try store.load()
-            backupStore = store
+            legacyBackups = try store.load().copies
         } catch {
-            backupMessage = "Couldn't read your local backups. Existing files weren't replaced."
+            backupMessage = "Couldn't read older copies. Existing files weren't replaced."
+        }
+        if let saved = UserDefaults.standard.data(forKey: Self.backupDestinationKey) {
+            backupDestination = try? JSONDecoder().decode(ExternalFolderBackup.Destination.self, from: saved)
+            if backupDestination == nil { backupMessage = "Select your backup folder again." }
         }
     }
 
@@ -60,55 +66,66 @@ final class AppModel: ObservableObject {
         BackupPayload(preferences: BackupPreferences(settings), vocabulary: vocabulary)
     }
 
-    func setBackupEnabled(_ enabled: Bool) {
-        var next = backupState
-        next.enabled = enabled
+    func selectBackupFolder(_ url: URL) {
         do {
-            if enabled { try next.capture(backupPayload) }
-            try saveBackupState(next)
+            let defaults = UserDefaults.standard
+            let owner = defaults.string(forKey: Self.backupOwnerKey).flatMap { UUID(uuidString: $0) } ?? UUID()
+            let chosen = try ExternalFolderBackup.Destination(selecting: url, owner: owner)
+            defaults.set(try JSONEncoder().encode(chosen), forKey: Self.backupDestinationKey)
+            defaults.set(owner.uuidString, forKey: Self.backupOwnerKey)
+            backupDestination = chosen
+            backupMessage = "Checking the selected Files folder…"
+            captureBackupIfEnabled()
         } catch {
-            backupMessage = "Couldn't change Auto Backup. Existing copies weren't changed."
+            backupMessage = "Could not use this Files folder. Choose a different location outside Dictation."
         }
+    }
+
+    func disconnectBackupFolder() {
+        UserDefaults.standard.removeObject(forKey: Self.backupDestinationKey)
+        backupDestination = nil
+        backupMessage = "Automatic backups are off. Existing Files copies were kept."
+    }
+
+    func currentBackup() -> BackupSnapshot {
+        BackupSnapshot(id: UUID(), savedAt: Date(), payload: backupPayload)
     }
 
     func restoreBackup(_ snapshot: BackupSnapshot) {
         do {
             try snapshot.payload.validate()
-            // Preserve the current state before changing the live records. A write
-            // failure must not silently invalidate the existing recovery copies.
-            if backupState.enabled {
-                var next = backupState
-                try next.capture(backupPayload)
-                try saveBackupState(next)
-            }
             restoringBackup = true
             settings = snapshot.payload.preferences.applying(to: settings)
             vocabulary = snapshot.payload.vocabulary
             VocabularyStore.save(vocabulary)
             restoringBackup = false
+            backupMessage = "Settings and vocabulary restored."
             captureBackupIfEnabled()
-            if backupMessage == nil { backupMessage = "Settings and vocabulary restored." }
         } catch {
             backupMessage = "Couldn't restore this backup. Current preferences weren't changed."
         }
     }
 
     private func captureBackupIfEnabled() {
-        guard backupState.enabled, !restoringBackup, backupState.copies.first?.payload != backupPayload else { return }
-        var next = backupState
-        do {
-            try next.capture(backupPayload)
-            try saveBackupState(next)
-        } catch {
-            backupMessage = "Couldn't save a new backup. Previous copies are still available."
+        guard let destination = backupDestination, !restoringBackup else { return }
+        let payload = backupPayload
+        let previous = backupTask
+        backupTask = Task { [weak self] in
+            await previous?.value
+            guard let self, backupDestination == destination else { return }
+            do {
+                let snapshot = try await Task.detached(priority: .utility) {
+                    try destination.capture(payload)
+                }.value
+                if backupDestination == destination {
+                    backupMessage = "Files backup verified: " + snapshot.savedAt.formatted(date: .abbreviated, time: .shortened)
+                }
+            } catch {
+                if backupDestination == destination {
+                    backupMessage = "Files backup could not be saved. Check folder access or select it again. No in-app fallback copy was made."
+                }
+            }
         }
-    }
-
-    private func saveBackupState(_ next: BackupStore.State) throws {
-        guard let backupStore else { throw BackupStore.Issue.invalid }
-        try backupStore.save(next)
-        backupState = next
-        backupMessage = nil
     }
 
     // MARK: - Readiness
